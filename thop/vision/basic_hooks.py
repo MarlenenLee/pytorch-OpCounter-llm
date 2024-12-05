@@ -117,6 +117,7 @@ def count_softmax(m, x, y):
     batch_size = x.numel() // nfeatures
 
     m.total_ops += calculate_softmax(batch_size, nfeatures)
+    count_shapes(m, x, y)
 
 
 def count_avgpool(m, x, y):

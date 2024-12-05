@@ -24,17 +24,15 @@ def calculate_rope(num_elements):
 
 
 def calculate_rmsn(ndim, nfeatures, num_elements):
-    # rms:
-    rms_mul = ndim
-    rms_add = ndim - 1
-    rms_div = 1
-    rms_add += 1 # for adding epsilon
-    rms_sqrt = 1
-    total_ops = (rms_mul + rms_add + rms_div + rms_sqrt) * nfeatures
-    
-    # norm:
-    ops = 2 # 1 div & 1 mul
-    total_ops += num_elements * ops
+    """
+    x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps) * weight
+    """
+    square_ops = num_elements
+    mean_ops = num_elements
+    eps_add_ops = nfeatures
+    sqrt_ops = nfeatures
+    norm_ops = 2*num_elements
+    total_ops = square_ops + mean_ops + eps_add_ops + sqrt_ops + norm_ops
     return torch.DoubleTensor([int(total_ops)])
 
 
