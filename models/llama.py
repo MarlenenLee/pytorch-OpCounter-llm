@@ -28,8 +28,9 @@ class RMSNorm(nn.Module):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x):
+        input_dtype = x.dtype
         output = self._norm(x.float()).type_as(x)
-        return output * self.weight
+        return output.to(input_dtype) * self.weight
 
 
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
@@ -53,12 +54,14 @@ def apply_rotary_emb(
     xk: torch.Tensor,
     freqs_cis: torch.Tensor,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    input_q_dtype = xq.dtype
+    input_k_dtype = xk.dtype
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
     freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
-    return xq_out.type_as(xq), xk_out.type_as(xk)
+    return xq_out.type_as(xq).to(input_q_dtype), xk_out.type_as(xk).to(input_k_dtype)
 
 
 class RoPE(nn.Module):
@@ -140,8 +143,16 @@ class Attention(nn.Module):
         scores = self.softmax(scores.float()).type_as(xq)
         #output = torch.matmul(scores, values)                   # (bs, n_local_heads, seqlen, head_dim)
         output = self.matmul_v(scores, values)
+        output = output.to(xq.dtype)
+
+        ## Use fused self-attention:
+        #is_causal = True if mask is None and seqlen > 1 else False
+        #output = torch.nn.functional.scaled_dot_product_attention(
+        #            xq, keys, values, attn_mask=mask, is_causal=is_causal)
+        
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
-        return self.wo(output)
+        output = self.wo(output)
+        return output
 
 
 class FeedForward(nn.Module):
@@ -261,8 +272,7 @@ class Transformer(nn.Module):
             h = layer(h, start_pos, freqs_cis, mask)
 
         h = self.norm(h)
-        #output = self.output(h).float()
-        output = self.output(h[:,-1:,:]).float()
+        output = self.output(h)
         return output
 
 

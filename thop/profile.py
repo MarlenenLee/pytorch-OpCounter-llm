@@ -21,6 +21,10 @@ if LooseVersion(torch.__version__) < LooseVersion("1.0.0"):
 
 default_dtype = torch.float64
 
+register_opsdim = {
+    nn.Linear: "2D",
+}
+
 register_hooks = {
     nn.ZeroPad2d: zero_ops,  # padding does not involve any multiplication.
     nn.Conv1d: count_convNd,
@@ -224,6 +228,8 @@ def profile(
         total_ops, total_params = module.total_ops.item(), 0
         input_shapes, output_shapes, weight_shapes = None, None, None
         ret_dict = {}
+        #module_list = list(module.named_modules())
+        #print(">>>>", module_list)
         for n, m in module.named_children():
             # if not hasattr(m, "total_ops") and not hasattr(m, "total_params"):  # and len(list(m.children())) > 0:
             #     m_ops, m_params = dfs_count(m, prefix=prefix + "\t")

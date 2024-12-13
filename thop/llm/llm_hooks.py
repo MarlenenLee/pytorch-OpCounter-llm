@@ -59,6 +59,7 @@ def count_mm(m, x, y):
 
 
 def count_ds(m, x, y):
+    """div_scalar"""
     num_elements = x[0].numel()
     m.total_ops += calculate_meta(num_elements)
     count_shapes(m, x, y)
