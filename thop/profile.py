@@ -186,6 +186,8 @@ def profile(
         m.register_buffer("input_shapes", torch.zeros((2,4), dtype=torch.long))
         m.register_buffer("output_shapes", torch.zeros(4, dtype=torch.long))
         m.register_buffer("weight_shapes", torch.zeros(4, dtype=torch.long))
+        m.register_buffer("total_macs", torch.zeros(1, dtype=torch.float64))
+        m.register_buffer("temp_acts", torch.zeros(1, dtype=torch.float64))
 
         # for p in m.parameters():
         #     m.total_params += torch.DoubleTensor([p.numel()])
@@ -227,6 +229,7 @@ def profile(
     def dfs_count(module: nn.Module, prefix="\t") -> (int, int):
         total_ops, total_params = module.total_ops.item(), 0
         input_shapes, output_shapes, weight_shapes = None, None, None
+        total_macs, temp_acts = 0, 0
         ret_dict = {}
         #module_list = list(module.named_modules())
         #print(">>>>", module_list)
@@ -246,19 +249,21 @@ def profile(
                     input_shapes = input_shapes[0]
                 output_shapes = list(filter(lambda num: num != 0, m.output_shapes.tolist()))
                 weight_shapes = list(filter(lambda num: num != 0, m.weight_shapes.tolist()))
+                m_macs, m_acts = m.total_macs.item(), m.temp_acts.item()
             else:
-                m_ops, m_params, input_shapes, output_shapes, weight_shapes, next_dict = dfs_count(m, prefix=prefix + "\t")
+                m_ops, m_params, input_shapes, output_shapes, weight_shapes, m_macs, m_acts, next_dict = dfs_count(m, prefix=prefix + "\t")
 
             ret_dict[n]  = (m_ops, m_params, next_dict)
             total_ops    += m_ops
             total_params += m_params
 
             print(prefix, m._get_name(), "\tFLOPs:", clever_format(m_ops), "\tParams:", clever_format(m_params), 
-                    '\tin_acts:', input_shapes, '\tweight:', weight_shapes, '\t--> out_acts:', output_shapes)
+                    "\tin_acts:", input_shapes, "\tweight:", weight_shapes, "\t--> out_acts:", output_shapes,
+                    "\tMACs:", clever_format(m_macs), "\tactivations:", clever_format(m_acts))
 
-        return total_ops, total_params, input_shapes, output_shapes, weight_shapes, ret_dict
+        return total_ops, total_params, input_shapes, output_shapes, weight_shapes, m_macs, m_acts, ret_dict
 
-    total_ops, total_params, input_shapes, output_shapes, weight_shapes, ret_dict = dfs_count(model)
+    total_ops, total_params, input_shapes, output_shapes, weight_shapes, m_macs, m_acts, ret_dict = dfs_count(model)
 
     # reset model to original status
     model.train(prev_training_status)
@@ -270,6 +275,8 @@ def profile(
         m._buffers.pop("input_shapes")
         m._buffers.pop("output_shapes")
         m._buffers.pop("weight_shapes")
+        m._buffers.pop("total_macs")
+        m._buffers.pop("temp_acts")
 
     if ret_layer_info:
         return total_ops, total_params, ret_dict

@@ -1,8 +1,36 @@
+import torch
 from collections.abc import Iterable
 
 COLOR_RED = "91m"
 COLOR_GREEN = "92m"
 COLOR_YELLOW = "93m"
+
+DATA_BYTES = {
+    torch.float: 4,
+    torch.float32: 4,
+    torch.float64: 8,
+    torch.double: 8,
+    torch.float16: 2,
+    torch.half: 2,
+    torch.bfloat16: 2,
+    torch.complex32: 4,
+    torch.chalf: 4,
+    torch.complex64: 8,
+    torch.cfloat: 8,
+    torch.complex128: 16,
+    torch.cdouble: 16,
+    torch.uint8: 1,
+    torch.uint16: 2,
+    torch.uint32: 4,
+    torch.uint64: 8,
+    torch.int8: 1,
+    torch.int16: 2,
+    torch.short: 2,
+    torch.int32: 4,
+    torch.int: 4,
+    torch.int64: 8,
+    torch.long: 8,
+}
 
 def colorful_print(fn_print, color=COLOR_RED):
     def actual_call(*args, **kwargs):

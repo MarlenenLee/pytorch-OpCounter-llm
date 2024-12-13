@@ -1,4 +1,4 @@
-from .utils import clever_format
+from .utils import clever_format, DATA_BYTES
 from .profile import profile
 # from .onnx_profile import OnnxProfile
 import torch
