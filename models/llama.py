@@ -159,19 +159,21 @@ class FeedForward(nn.Module):
     def __init__(
         self,
         dim: int,
-        hidden_dim: int,
-        multiple_of: int,
-        ffn_dim_multiplier: Optional[float],
+        #hidden_dim: int,
+        #multiple_of: int,
+        #ffn_dim_multiplier: Optional[float],
+        intermediate_size: int,
         model_parallel_size: int, ## added
     ):
         super().__init__()
-        hidden_dim = int(2 * hidden_dim / 3)
+        #hidden_dim = int(2 * hidden_dim / 3)
         # custom dim factor multiplier
-        if ffn_dim_multiplier is not None:
-            hidden_dim = int(ffn_dim_multiplier * hidden_dim)
-        hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
+        #if ffn_dim_multiplier is not None:
+        #    hidden_dim = int(ffn_dim_multiplier * hidden_dim)
+        #hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
 
-        hidden_dim = hidden_dim // model_parallel_size    #added
+        #hidden_dim = hidden_dim // model_parallel_size    #added
+        hidden_dim = intermediate_size // model_parallel_size
 
         self.w1 = nn.Linear(dim, hidden_dim, bias=False)
         self.w2 = nn.Linear(hidden_dim, dim, bias=False)
@@ -193,9 +195,10 @@ class TransformerBlock(nn.Module):
         self.attention = Attention(args)
         self.feed_forward = FeedForward(
             dim=args.dim,
-            hidden_dim=4 * args.dim,
-            multiple_of=args.multiple_of,
-            ffn_dim_multiplier=args.ffn_dim_multiplier,
+            #hidden_dim=4 * args.dim,
+            #multiple_of=args.multiple_of,
+            #ffn_dim_multiplier=args.ffn_dim_multiplier,
+            intermediate_size=args.intermediate_size,
             model_parallel_size=args.model_parallel_size,    #added
         )
         self.layer_id = layer_id

@@ -11,13 +11,14 @@ from models.llama import (
 
 
 class ModelArgs:
-    dim: int = 8192
-    n_layers: int = 2 #org:80
-    n_heads: int = 64
-    n_kv_heads: int = 8
+    dim: int = 8192                  # 8192
+    n_layers: int = 1                # 80
+    n_heads: int = 64                # 64
+    n_kv_heads: int = 8              # 8
     vocab_size: int = 32000
-    multiple_of: int = 4096
-    ffn_dim_multiplier: float = 1.3
+    #multiple_of: int = 4096
+    #ffn_dim_multiplier: float = 1.3
+    intermediate_size: int = 28672   # 28672 
     norm_eps: float = 1e-5
     max_batch_size: int = 32
     max_seq_len: int = 4096
@@ -25,7 +26,9 @@ class ModelArgs:
     model_parallel_size: int = 4
 
     batch_size: int = 1
-    seq_len: int = 1024
+    seq_len: int = 4096
+
+    use_amp: bool = True
 
 
 
@@ -46,7 +49,7 @@ if __name__ == "__main__":
         custom_ops=custom_ops,
         inputs=(tokens, 0),
         ret_layer_info=True,
-        report_missing=True
+        report_missing=True,
     )
     print("\nTotal FLOPs:", clever_format(macs), 
             "\tTotal Params:", clever_format(params))
